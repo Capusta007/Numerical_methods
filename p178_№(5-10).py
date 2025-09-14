@@ -8,7 +8,7 @@ b = [1, 1.5, 0.5, 1, 2, 2.5]
 h = [0.1, 0.05, 0.05, 0.1, 0.1, 0.05]
 y0 = [1, 2, math.e, 0, 0, 2]
 
-def euler(f, x0 : float, y0 : float, h : float, X : float):
+def euler(f, x0:float, y0:float, h:float, X:float):
     x = [x0]
     y = [y0]
     N = int((X - x0) / h)
