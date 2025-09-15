@@ -2,8 +2,10 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
+from tabulate import tabulate
 
 #################TASK1#################
+print("############TASK1############")
 h = 0.1
 x0 = 1
 y0 = 0.5
@@ -30,18 +32,20 @@ def runge_kutta(f, x0:float, y0:float, h:float, X:float):
     
 x, y = runge_kutta(f, x0, y0, h, X)
 
-# Решение через solve_ivp
+# Решение через встроенную функцию
 y0_ivp = [y0]
 sol = solve_ivp(f, [x0, X], y0_ivp, method='RK45', max_step=h, dense_output=True)
-x_ivp = np.linspace(x0, X, 200)
+x_ivp = np.linspace(x0, X, 500)
+
+y_ivp = sol.sol(x)[0]
+data = []
+for k in range(0, 6):
+    data.append([k, x[k], y[k], y_ivp[k], abs(y[k] - y_ivp[k])])
+print(tabulate(data, headers=['k', 'аргумент x(k)', 'значение y(k)', 'точное решение y(k)', 'погрешность y(k)'], tablefmt='grid', floatfmt=".10f"))
+
 y_ivp = sol.sol(x_ivp)[0]
-
-print("TASK1")
-print(f"x = {x[-1]}")
-print(f"y = {y[-1]}")
-
 plt.plot(x, y, 'o-', color='blue', label=f'Runge-Kutta h={h}')
-plt.plot(x_ivp, y_ivp, '-', color='red', label='RK45')
+plt.plot(x_ivp, y_ivp, '-', color='red', label='Точное решение')
 plt.legend()
 plt.grid(True)
 plt.suptitle("Task 1")
@@ -50,6 +54,7 @@ plt.show()
 
 
 #################TASK2#################
+print("\n############TASK2############")
 
 x0 = 1
 y0 = 0
@@ -64,7 +69,7 @@ def f1(x, y, z):
 def f2(x, y, z):
     return x + z / (1 + x)
 
-# Для ivp
+# Для встроенного вычисления
 def F(t, Y):
     y, z = Y
     return [ (t**3)*z + 2*y/t,
@@ -94,39 +99,44 @@ def runge_kutta_system(f1,f2, x0:float, y0:float, z0:float, h:float, X:float):
         z.append(z0)
     return np.array(x), np.array(y), np.array(z)
 
-fig, axes = plt.subplots(1, 3, figsize=(14, 8))
+fig, axes = plt.subplots(1, 2, figsize=(14, 8))
 axes = axes.flatten()
 
-# Решение через solve_ivp
-sol = solve_ivp(F, [x0, X], y0_ivp, method='RK45', max_step=h/100, dense_output=True)
-x_ivp = np.linspace(x0, X, 200)
+# Решение через встроенную функцию
+sol = solve_ivp(F, [x0, X], y0_ivp, method='RK45', max_step=h/1000, dense_output=True)
+x_ivp = np.linspace(x0, X, 500)
 y_ivp, z_ivp = sol.sol(x_ivp)
-axes[0].plot(x_ivp, y_ivp, '-', color='blue', label='y(x) solve_ivp')
-axes[0].plot(x_ivp, z_ivp, '-', color='red', label='z(x) solve_ivp')
-
+axes[0].plot(x_ivp, z_ivp, '-', color='green', label='z(x) точное решение')
+axes[1].plot(x_ivp, z_ivp, '-', color='green', label='z(x) точное решение')
+axes[0].plot(x_ivp, y_ivp, '-', color='black', label='y(x) точное решение')
+axes[1].plot(x_ivp, y_ivp, '-', color='black', label='y(x) точное решение')
 
 x, y, z = runge_kutta_system(f1,f2, x0, y0, z0, h, X)
-print("\nTASK2")
-print("solve_ivp:", [y_ivp[-1], z_ivp[-1]])
-print(f"x = {x[-1]}")
-print(f"y = {y[-1]}")
-print(f"z = {z[-1]}")
-print(abs(y_ivp[-1] - y[-1]) < eps)
-print(abs(z_ivp[-1] - z[-1]) < eps)
-axes[1].plot(x, y, 'o-', color='blue', label=f'y(x), h={h}')
-axes[1].plot(x, z, 'o-', color='red', label=f'z(x), h={h}')
 
+print("Таблица значений")
+data = []
+for k in range(0, 6):
+    data.append([k, x[k], y[k], z[k]])
+print(tabulate(data, headers=['k', 'аргумент x(k)', 'значение y(k)', 'значение z(k)'], tablefmt='grid', floatfmt=".6f"))
+
+print("Таблица погрешностей")
+y_ivp, z_ivp = sol.sol(x)
+data = []
+for k in range(0, 6):
+    data.append([k, x[k], abs(y[k] - y_ivp[k]), abs(z[k] - z_ivp[k])])
+print(tabulate(data, headers=['k', 'аргумент x(k)', 'погрешность y(k)', 'погрешность z(k)'], tablefmt='grid', floatfmt=".10f"))
+
+print("Погрешность y(1.5) = " + str(abs(y_ivp[-1] - y[-1])))
+print("Погрешность z(1.5) = " + str(abs(z_ivp[-1] - z[-1])))
+axes[0].plot(x, y, 'o--', color='blue', label=f'y(x), h={h}')
+axes[0].plot(x, z, 'o--', color='red', label=f'z(x), h={h}')
+
+# График с h = h/2
 x, y, z = runge_kutta_system(f1,f2, x0, y0, z0, h/2, X)
-print()
-print(f"x = {x[-1]}")
-print(f"y = {y[-1]}")
-print(f"z = {z[-1]}")
-print(abs(y_ivp[-1] - y[-1]) < eps)
-print(abs(z_ivp[-1] - z[-1]) < eps)
-axes[2].plot(x, y, 'o-', color='blue', label=f'y(x), h={h/2}')
-axes[2].plot(x, z, 'o-', color='red', label=f'z(x), h={h/2}')
+axes[1].plot(x, y, 'o--', color='blue', label=f'y(x), h={h/2}')
+axes[1].plot(x, z, 'o--', color='red', label=f'z(x), h={h/2}')
 
-for i in range(3):
+for i in range(2):
     axes[i].legend()
     axes[i].grid(True)
 
