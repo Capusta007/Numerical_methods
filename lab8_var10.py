@@ -123,43 +123,86 @@ plt.show()
 
 
 
-##########################
-# МЕТОД ГАЛЕРКИНА (n=4)
-##########################
-print("\n=== Метод Галеркина (n=4) ===")
+#############МЕТОД ГАЛЕРКИНА#############
+print("#############TASK2#############")
 
-phi = [
-    lambda x: x**2 - x,
-    lambda x: x**3 - x**2,
-    lambda x: x**4 - x**3,
-    lambda x: x**5 - x**4
+# 1. Находим φ₀(x), удовлетворяющую неоднородным граничным условиям
+# φ₀(x) = A + Bx
+# Условия:
+# alpha0*φ₀(a) + beta0*φ₀'(a) = gamma0
+# alpha1*φ₀(b) + beta1*φ₀'(b) = gamma1
+
+def find_phi0():
+    # φ₀(x) = c0 + c1*x
+    # φ₀'(x) = c1
+    
+    # Система уравнений:
+    # alpha0*(c0 + c1*a) + beta0*c1 = gamma0
+    # alpha1*(c0 + c1*b) + beta1*c1 = gamma1
+    
+    A = np.array([
+        [alpha0, alpha0*a + beta0],
+        [alpha1, alpha1*b + beta1]
+    ])
+    b_vec = np.array([gamma0, gamma1])
+    
+    c0, c1 = np.linalg.solve(A, b_vec)
+    return lambda x: c0 + c1*x
+
+phi0 = find_phi0()
+
+# 2. Базисные функции φ_k(x),
+# они должны удовлетворять:
+# 4*φ_k(a) - 2*φ_k'(a) = 0
+# φ_k(b) + φ_k'(b) = 0
+
+# Используем полиномы: φ_k(x) = (x-a)^(k+1)*(x-b) для k=1,2,3,4 (Они всегда занулятся с такими условиями)
+phi_basis = [
+    lambda x: (x-a)**2 * (x-b),    # k=1
+    lambda x: (x-a)**3 * (x-b),    # k=2  
+    lambda x: (x-a)**4 * (x-b),    # k=3
+    lambda x: (x-a)**5 * (x-b)     # k=4
 ]
 
-n = len(phi)
+n = len(phi_basis)
+
+# 3. Вычисляем коэффициенты системы
 A = np.zeros((n, n))
 B = np.zeros(n)
 xs = np.linspace(a, b, 200)
 
-def Lphi(func, x):
+def L_operator(func, x):
+    """Оператор L(y) = y'' + p(x)y' - q(x)y"""
     dx = 1e-5
     f = func(x)
-    df = (func(x + dx) - func(x - dx)) / (2 * dx)
+    df = (func(x + dx) - func(x - dx)) / (2 * dx) # Через ряд тейлора вывели производные
     d2f = (func(x + dx) - 2*func(x) + func(x - dx)) / (dx**2)
     return d2f + p(x)*df - q(x)*f
 
+# Вычисляем L(φ₀) для правой части
+L_phi0_vals = np.array([L_operator(phi0, x) for x in xs])
+
 for i in range(n):
     for j in range(n):
-        A[i, j] = np.trapz(Lphi(phi[j], xs) * phi[i](xs), xs)
-    B[i] = np.trapz(f(xs) * phi[i](xs), xs)
+        # A[i,j] = integral[a,b] {L(φ_j) * φ_i} dx
+        L_phi_j_vals = np.array([L_operator(phi_basis[j], x) for x in xs])
+        phi_i_vals = np.array([phi_basis[i](x) for x in xs])
+        A[i, j] = np.trapz(L_phi_j_vals * phi_i_vals, xs) # c_i_j посчитали
+    
+    # B[i] = integral[a,b] {[f(x) - L(φ₀)] * φ_i} dx
+    phi_i_vals = np.array([phi_basis[i](x) for x in xs])
+    B[i] = np.trapz((f(xs) - L_phi0_vals) * phi_i_vals, xs) # d_i посчитали
 
+# Решаем систему и строим решение
 a_coeff = np.linalg.solve(A, B)
-Yg = np.zeros_like(x)
+
+Yg = phi0(x)
 for k in range(n):
-    Yg += a_coeff[k] * phi[k](x)
+    Yg += a_coeff[k] * phi_basis[k](x)
 
-# Добавим линейную комбинацию, чтобы удовлетворить граничным условиям
-Yg += (gamma0/alpha0) * (1 - x) + (gamma1/alpha1) * x
+print("Коэффициенты метода Галеркина:", a_coeff)
 
+# График
 plt.figure(figsize=(10,6))
 plt.plot(x, Yg, 'o-', label='Метод Галеркина (n=4)')
 plt.plot(x_dense, y_vals, '-', label='Точное решение (solve_bvp)')
