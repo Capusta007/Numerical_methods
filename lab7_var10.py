@@ -100,7 +100,7 @@ def runge_kutta_system(f1,f2, x0:float, y0:float, z0:float, h:float, X:float):
     return np.array(x), np.array(y), np.array(z)
 
 fig, axes = plt.subplots(1, 2, figsize=(14, 8))
-axes = axes.flatten()
+axes = axes.flatten() # type: ignore
 
 # Решение через встроенную функцию
 sol = solve_ivp(F, [x0, X], y0_ivp, method='RK45', max_step=h/1000, dense_output=True)

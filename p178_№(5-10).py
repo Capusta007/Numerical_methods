@@ -38,7 +38,7 @@ titles = [
 ]
 
 fig, axes = plt.subplots(2, 3, figsize=(14, 8))
-axes = axes.flatten()
+axes = axes.flatten() # type: ignore
 
 for i in range(6):
     y0_ivp = [y0[i]]
